@@ -7,20 +7,25 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
 	"time"
 
+	"github.com/RichardKnop/uuid"
 	"google.golang.org/grpc"
 )
 
 func UploadApp(client pb.AppUploadClient) {
-	file, err := os.Open("laptop.jpg")
+	filePath := "tmp/laptop.jpg"
+	file, err := os.Open(filePath)
+	// fileInfo, _ := file.Stat()
+	fileType := path.Ext(filePath)
 
 	if err != nil {
 		log.Fatal("cannot open image file: ", err)
 	}
 	defer file.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Hour)
 	defer cancel()
 
 	stream, err := client.UploadApp(ctx)
@@ -35,8 +40,8 @@ func UploadApp(client pb.AppUploadClient) {
 				AppName:        "testaapp",
 				AppDescription: "app description ",
 				AppSize:        "9000",
-				BuildNumber:    "0020200202",
-				FileType:       "jpg",
+				BuildNumber:    uuid.New(),
+				FileType:       fileType,
 			},
 		},
 	}
@@ -47,7 +52,7 @@ func UploadApp(client pb.AppUploadClient) {
 	}
 
 	reader := bufio.NewReader(file)
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, 5*1024*1024)
 
 	for {
 		n, err := reader.Read(buffer)
