@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -25,6 +26,8 @@ type FilesLocation struct {
 }
 
 var filesLocation FilesLocation
+
+var MaxUploadSize = 2 * 1024 * 1024
 
 // publishCmd represents the publish command
 var publishCmd = &cobra.Command{
@@ -139,9 +142,13 @@ func UploadApp(client pb.AppUploadClient) {
 	}
 
 	reader := bufio.NewReader(app)
-	buffer := make([]byte, 5*1024*1024)
+	buffer := make([]byte, MaxUploadSize)
+
+	total := appStat.Size() / int64(MaxUploadSize)
+	bar := progressbar.Default(total + 1)
 
 	for {
+		bar.Add(1)
 		n, err := reader.Read(buffer)
 		if err == io.EOF {
 			break
@@ -157,6 +164,7 @@ func UploadApp(client pb.AppUploadClient) {
 		}
 
 		err = stream.Send(req)
+
 		if err != nil {
 			log.Fatal("cannot send chunk to server: ", err, stream.RecvMsg(nil))
 		}
