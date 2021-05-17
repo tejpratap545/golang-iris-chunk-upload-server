@@ -3,18 +3,28 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"encoding/json"
+	"feb-cli/helpers"
 	"feb-cli/pb"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
 
-var appFileLocation string
-var appInfoFileLocation string
+type FilesLocation struct {
+	AppFileLocation     string
+	AppInfoFileLocation string
+}
+
+var filesLocation FilesLocation
 
 // publishCmd represents the publish command
 var publishCmd = &cobra.Command{
@@ -22,6 +32,9 @@ var publishCmd = &cobra.Command{
 	Short: "Publish App to Feblic App Store",
 	Long:  `This Command is use to publish app in feblic app store. For example: `,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		CheckFileInput()
+		helpers.CheckUserAuthenticate()
 
 		serverAddress := "0.0.0.0:8081"
 		conn, err := grpc.Dial(serverAddress, grpc.WithInsecure())
@@ -34,16 +47,59 @@ var publishCmd = &cobra.Command{
 	},
 }
 
+// function to check file flag if not present in command then ask to user
+func CheckFileInput() {
+	var err error
+	reader := bufio.NewReader(os.Stdin)
+	if filesLocation.AppFileLocation == "" {
+		fmt.Print("Enter app info file location : ")
+		filesLocation.AppFileLocation, err = reader.ReadString('\n')
+		if err != nil {
+			log.Fatal("can not read app build file location")
+		}
+	}
+
+	if filesLocation.AppInfoFileLocation == "" {
+		fmt.Print("Enter app file location : ")
+		filesLocation.AppInfoFileLocation, err = reader.ReadString('\n')
+		if err != nil {
+			log.Fatal("can not read app info file location")
+		}
+	}
+}
+
 func UploadApp(client pb.AppUploadClient) {
-	filePath := "tmp/laptop.jpg"
-	file, err := os.Open(filePath)
-	// fileInfo, _ := file.Stat()
-	// fileType := path.Ext(filePath)
+
+	//   open app location file
+	app, err := os.Open(filesLocation.AppFileLocation)
+	if err != nil {
+		log.Fatal("Can not open app location please check file location")
+	}
+	fileType := path.Ext(filesLocation.AppFileLocation)
+	defer app.Close()
+
+	appStat, err := app.Stat()
+	appSize := strconv.Itoa(int(appStat.Size()))
 
 	if err != nil {
-		log.Fatal("cannot open image file: ", err)
+
+		log.Fatal("camn not read stat of the app ")
 	}
-	defer file.Close()
+
+	// open app information file
+	jsonFile, err := os.Open(filesLocation.AppInfoFileLocation)
+
+	if err != nil {
+
+		log.Fatal("Can not open app information file please check file location")
+	}
+
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var appInfo pb.AppInfo
+	json.Unmarshal([]byte(byteValue), &appInfo)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Hour)
 	defer cancel()
@@ -51,16 +107,38 @@ func UploadApp(client pb.AppUploadClient) {
 	stream, err := client.UploadApp(ctx)
 
 	if err != nil {
-		log.Fatal("cannot upload image: ", err)
+		log.Fatal("cannot upload app please try again  or check your internet information: ", err)
 	}
 
-	// err = stream.Send(req)
+	// send basic meta data in first request like meta data and app size
+	req := &pb.UploadAppRequest{
+		Data: &pb.UploadAppRequest_RequestMetaData{
+			RequestMetaData: &pb.UploadAppRequestInfo{
+				AccessToken: helpers.GetAccessToken(), AppSize: appSize, FileType: fileType,
+			},
+		},
+	}
+
+	err = stream.Send(req)
+	if err != nil {
+		log.Fatal("Can not send data to server ")
+	}
+
+	// send info of the app
+
+	req = &pb.UploadAppRequest{
+		Data: &pb.UploadAppRequest_AppInfo{
+			AppInfo: &appInfo,
+		},
+	}
+
+	err = stream.Send(req)
 
 	if err != nil {
-		log.Fatal("cannot send image info to server: ", err, stream.RecvMsg(nil))
+		log.Fatal("cannot send app info to server: ", err, stream.RecvMsg(nil))
 	}
 
-	reader := bufio.NewReader(file)
+	reader := bufio.NewReader(app)
 	buffer := make([]byte, 5*1024*1024)
 
 	for {
@@ -94,6 +172,8 @@ func UploadApp(client pb.AppUploadClient) {
 
 func init() {
 
-	publishCmd.Flags().StringVarP(&appFileLocation, "sourceapp", "s", "", "Source directory to read from")
-	publishCmd.Flags().StringVarP(&appInfoFileLocation, "sourcefile", "p", "", "Source directory to read from")
+	rootCmd.AddCommand(publishCmd)
+
+	publishCmd.Flags().StringVarP(&filesLocation.AppFileLocation, "sourceapp", "s", "", "App file location")
+	publishCmd.Flags().StringVarP(&filesLocation.AppInfoFileLocation, "sourcefile", "p", "", "App info file location")
 }

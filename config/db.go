@@ -9,6 +9,5 @@ func DB() *bolt.DB {
 		panic("can not open hone dir ")
 	}
 
-	defer db.Close()
 	return db
 }

@@ -15,6 +15,7 @@ var logoutCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		db := config.DB()
+		defer db.Close()
 
 		db.Update(func(tx *bolt.Tx) error {
 			b := tx.Bucket([]byte("user"))
@@ -25,4 +26,8 @@ var logoutCmd = &cobra.Command{
 		fmt.Println("You are successfully logout")
 
 	},
+}
+
+func init() {
+	rootCmd.AddCommand(logoutCmd)
 }

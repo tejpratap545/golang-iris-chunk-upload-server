@@ -5,7 +5,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"feb-cli/config"
-	"feb-cli/utils"
+	"feb-cli/helpers"
+
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/spf13/cobra"
 	bolt "go.etcd.io/bbolt"
-
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -40,7 +40,7 @@ var loginCmd = &cobra.Command{
 		// path, err := homedir.Dir()
 
 		// if err != nil {
-		// 	panic("can not open hone dir ")
+		// 	log.Fatal("can not open hone dir ")
 
 		// }
 
@@ -50,9 +50,9 @@ var loginCmd = &cobra.Command{
 		if user.Username == "" {
 
 			fmt.Print("Enter Username: ")
-			user.Password, err = reader.ReadString('\n')
+			user.Username, err = reader.ReadString('\n')
 			if err != nil {
-				panic("can not read username")
+				log.Fatal("Can not read username")
 			}
 
 		}
@@ -60,18 +60,18 @@ var loginCmd = &cobra.Command{
 			fmt.Print("Enter Password: ")
 			bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
 			if err != nil {
-				panic("can not read password")
+				log.Fatal("can not read password")
 			}
 
 			user.Password = string(bytePassword)
 		}
 
 		// start spinner
-		utils.NewSpinner()
+		helpers.NewSpinner()
 
 		userJson, err := json.Marshal(user)
 		if err != nil {
-			panic("can not read convert json")
+			log.Fatal("can not read convert json")
 		}
 
 		body := bytes.NewBuffer(userJson)
@@ -81,7 +81,7 @@ var loginCmd = &cobra.Command{
 		res, err := http.Post(url, "application/json", body)
 
 		if err != nil {
-			panic("can not login please check username and password")
+			log.Fatal("can not login please check username and password")
 		}
 		defer res.Body.Close()
 
@@ -95,9 +95,11 @@ var loginCmd = &cobra.Command{
 		json.Unmarshal(bytes, &token)
 
 		db := config.DB()
+		defer db.Close()
 
 		db.Update(func(tx *bolt.Tx) error {
-			b, err := tx.CreateBucket([]byte("user"))
+			fmt.Println("come")
+			b, err := tx.CreateBucketIfNotExists([]byte("user"))
 			if err != nil {
 				return fmt.Errorf("create bucket: %s", err)
 			}
@@ -106,7 +108,7 @@ var loginCmd = &cobra.Command{
 			return err
 		})
 
-		utils.StopSpinner()
+		helpers.StopSpinner()
 
 		fmt.Println("You Are Now sccessfully authenticate. ")
 
