@@ -1,0 +1,5 @@
+export AWS_ACCESS_KEY_ID="AKIAVC2ZDDDKZOSH5PNB"
+export AWS_SECRET_ACCESS_KEY="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"
+export AWS_S3_REGION="ap-south-1"
+export AWS_S3_BUCKET="feblics3bucket"
+export API_URL="https://feblic-test.herokuapp.com"

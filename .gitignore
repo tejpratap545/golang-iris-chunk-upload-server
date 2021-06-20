@@ -1,0 +1,10 @@
+.DS_Store
+.vscode
+go.sum
+.iris.yml
+.nuxt
+node_modules
+__debug_bin
+.env
+main
+AppUploadServer

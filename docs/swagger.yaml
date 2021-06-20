@@ -1,0 +1,170 @@
+definitions:
+  controller.initilizeRquest:
+    properties:
+      fileType:
+        type: string
+    type: object
+  service.CompleteMultiPartOutput:
+    properties:
+      key:
+        type: string
+      location:
+        type: string
+    type: object
+  service.MultiPartUploadResponse:
+    properties:
+      abortDate:
+        description: |-
+          If the bucket has a lifecycle rule configured with an action to abort incomplete
+          multipart uploads and the prefix in the lifecycle rule matches the object name
+          in the request, the response includes this header. The header indicates when the
+          initiated multipart upload becomes eligible for an abort operation. For more
+          information, see  Aborting Incomplete Multipart Uploads Using a Bucket Lifecycle
+          Policy
+          (https://docs.aws.amazon.com/AmazonS3/latest/dev/mpuoverview.html#mpu-abort-incomplete-mpu-lifecycle-config).
+          The response also includes the x-amz-abort-rule-id header that provides the ID
+          of the lifecycle configuration rule that defines this action.
+        type: string
+      bucket:
+        type: string
+      key:
+        description: Object key for which the multipart upload was initiated.
+        type: string
+      uploadId:
+        description: ID for the initiated multipart upload.
+        type: string
+    type: object
+  service.PartInput:
+    properties:
+      chunk:
+        items:
+          type: integer
+        type: array
+      partNumber:
+        type: integer
+    type: object
+  service.PartUploadOutput:
+    properties:
+      etag:
+        description: Entity tag returned when the part was uploaded.
+        type: string
+      partNumber:
+        description: |-
+          Part number that identifies the part. This is a positive integer between 1 and
+          10,000.
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /upload/file:
+    post:
+      consumes:
+      - multipart/form-data
+      - application/x-www-form-urlencoded
+      description: Completes a multipart upload by assembling previously uploaded parts
+      parameters:
+      - description: 'upload file '
+        in: body
+        name: file
+        required: true
+        schema:
+          type: string
+      - description: location of the file in s3 bucket default is apk
+        in: body
+        name: location
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.CompleteMultiPartOutput'
+        "400":
+          description: error
+          schema:
+            type: string
+      summary: Upload File
+  /upload/finish:
+    post:
+      description: Completes a multipart upload by assembling previously uploaded parts
+      parameters:
+      - description: Upload ID that identifies the multipart upload.
+        in: header
+        name: X-Upload-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.CompleteMultiPartOutput'
+        "400":
+          description: error
+          schema:
+            type: string
+      summary: Completes a multipart upload upload
+  /upload/initlize:
+    post:
+      consumes:
+      - application/json
+      description: This action initiates a multipart upload and returns an upload ID. This upload ID is used to associate all of the parts in the specific multipart upload. You specify this upload ID in each of your subsequent upload part requests
+      parameters:
+      - description: file info
+        in: body
+        name: bottles
+        required: true
+        schema:
+          $ref: '#/definitions/controller.initilizeRquest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.MultiPartUploadResponse'
+        "400":
+          description: error
+          schema:
+            type: string
+      summary: Initilize Multipart Upload
+  /upload/part:
+    post:
+      consumes:
+      - multipart/form-data
+      - application/x-www-form-urlencoded
+      description: |-
+        Uploads a part in a multipart upload. In this operation, you provide part data
+        in your request. However, you have an option to specify your existing Amazon S3
+        object as a data source for the part you are uploading. To upload a part from an
+        existing object, you use the UploadPartCopy
+      parameters:
+      - description: file info
+        in: body
+        name: bottles
+        required: true
+        schema:
+          $ref: '#/definitions/service.PartInput'
+      - description: Upload ID that identifies the multipart upload.
+        in: header
+        name: X-Upload-Id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.PartUploadOutput'
+        "400":
+          description: error
+          schema:
+            type: string
+      summary: Uploads a part in a multipart upload
+swagger: "2.0"
