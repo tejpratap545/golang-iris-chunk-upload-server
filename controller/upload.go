@@ -33,6 +33,7 @@ func InitilizeMultiPartUpload(ctx iris.Context) {
 
 	if err := ctx.ReadBody(&body); err != nil {
 		ctx.StopWithText(400, "Can Not Read Body ")
+		return
 	}
 
 	key := "apk/" + uuid.New().String() + "." + body.FileType
@@ -46,6 +47,7 @@ func InitilizeMultiPartUpload(ctx iris.Context) {
 	response, err := input.CreateMultiPartUpload()
 	if err != nil {
 		ctx.StopWithText(400, "Can Not set  start mulipart input ")
+		return
 	}
 
 	rdb := new(service.RedisClient)
@@ -60,17 +62,13 @@ func InitilizeMultiPartUpload(ctx iris.Context) {
 		IsCompleted: false,
 	}
 
-	status, err := rdb.Set(*response.UploadId, rdbData)
+	_, err = rdb.Set(*response.UploadId, rdbData)
 
 	if err != nil {
 		ctx.StopWithText(400, "Can Not set  data in redis ")
+		return
 	}
-	log.Println(status)
 
-	if err != nil {
-		ctx.StopWithText(400, "Can Not Create MultiPart Input ")
-
-	}
 	ctx.JSON(response)
 
 }
@@ -112,6 +110,7 @@ func UploadPart(ctx iris.Context) {
 	err := rdb.Get(body.UploadId, rdbData)
 	if err != nil {
 		ctx.StopWithText(400, "Can Not get data from redis")
+		return
 	}
 
 	body.Key = rdbData.Key
@@ -120,6 +119,7 @@ func UploadPart(ctx iris.Context) {
 
 	if err != nil {
 		ctx.StopWithText(400, "Can Not upload part")
+		return
 	}
 
 	rdbData.CompletedPart = append(rdbData.CompletedPart, *result)
@@ -127,6 +127,7 @@ func UploadPart(ctx iris.Context) {
 
 	if err != nil {
 		ctx.StopWithText(400, "Can Not set  data in redis ")
+		return
 	}
 	log.Println(status)
 	response := &service.PartUploadOutput{
@@ -159,6 +160,7 @@ func FinishMultiPartUpload(ctx iris.Context) {
 	err := rdb.Get(uploadId, rdbData)
 	if err != nil {
 		ctx.StopWithText(400, "Can Not get data from redis")
+		return
 	}
 
 	input := &service.CompleteMultiPartInput{
@@ -172,6 +174,7 @@ func FinishMultiPartUpload(ctx iris.Context) {
 
 	if err != nil {
 		ctx.StopWithText(400, "Can Not Complete Multipart Output")
+		return
 	}
 
 	response := &service.CompleteMultiPartOutput{
@@ -185,7 +188,7 @@ func FinishMultiPartUpload(ctx iris.Context) {
 
 // Upload File
 // @Summary Upload File
-// @Description Completes a multipart upload by assembling previously uploaded parts
+// @Description Upload file for less then 6 mb . This is sigle step direct upload to aws s3  for small files
 // @Accept  mpfd
 // @Accept  x-www-form-urlencoded
 // @Produce  json
