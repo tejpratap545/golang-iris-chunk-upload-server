@@ -19,7 +19,8 @@ func main() {
 }
 
 func newApp() *iris.Application {
-	app := iris.Default()
+
+	app := iris.New()
 
 	app.PartyFunc("/", Route)
 
