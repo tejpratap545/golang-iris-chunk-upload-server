@@ -72,7 +72,7 @@ export default {
     async startMultiPartUpload() {
       this.fileUploadStart = true;
       const resp = await this.$axios.$post(
-        "http://localhost:8081/upload/initilize",
+        "https://upload.feblic.com/upload/initilize",
         {
           fileType: this.file.name.split(".").pop(),
         }
@@ -110,13 +110,13 @@ export default {
       bodyFormData.append("chunk", chunk, this.file.name);
       bodyFormData.append("partNumber", this.partNumber);
       await this.$axios.$post(
-        "http://127.0.0.1:8081/upload/part",
+        "https://upload.feblic.com/upload/part",
         bodyFormData
       );
 
       if (this.currentChunkFinalByte === this.file.size) {
         const res = await this.$axios.$post(
-          "http://127.0.0.1:8081/upload/finish"
+          "https://upload.feblic.com/upload/finish"
         );
         this.message = `Yay, upload completed! key is  ${res.key} and url is ${res.location}`;
         this.fileUploadStart = false;
