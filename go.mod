@@ -2,7 +2,7 @@ module app-upload-server
 
 go 1.15
 
-require (
+require (s
 	github.com/Joker/hpp v1.0.0 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/aws/aws-sdk-go-v2 v1.6.0

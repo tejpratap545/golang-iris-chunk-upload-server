@@ -1,0 +1,30 @@
+{
+  "app_metadata": {
+    "app_category": ["ART_AND_DESIGN"],
+    "app_description": {
+      "long_build_description": "short description",
+      "short_build_description": "long description"
+    },
+    "app_icon": "icon",
+    "app_name": "app name",
+    "app_sub_category": "ART_AND_DESIGN"
+  },
+  "app_url": "2020020",
+  "id": 0,
+  "localisations": {
+    "countries": ["IN"],
+    "default_language": "string",
+    "languages": ["string"]
+  },
+  "price": {
+    "type": "FREE",
+    "value": "10"
+  },
+  "privacy_compliance": {
+    "permissions": ["CAMERA"],
+    "privacy_policy_url": "http://ssss"
+  },
+
+  "updated_by_id": 0,
+  "website": "lssksk@kskskks"
+}
